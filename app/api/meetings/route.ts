@@ -1,5 +1,4 @@
-
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import type { SacramentMeeting } from '@/lib/types';
 import {
   getMeetings,
@@ -16,12 +15,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const meetings = getMeetings(date ?? undefined);
+  try {
+    const meetings = await getMeetings(date ?? undefined);
 
-  return NextResponse.json({
-    count: meetings.length,
-    meetings,
-  });
+    return NextResponse.json({
+      count: meetings.length,
+      meetings,
+    });
+  } catch (error) {
+    console.error('Get meetings error:', error);
+
+    return NextResponse.json(
+      { message: 'Unable to retrieve meetings.' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -48,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const meeting = createMeeting(data);
+    const meeting = await createMeeting(data);
 
     return NextResponse.json(
       {
@@ -57,10 +65,12 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error('Create meeting error:', error);
+
     return NextResponse.json(
-      { message: 'Invalid meeting data.' },
-      { status: 400 }
+      { message: 'Unable to create meeting.' },
+      { status: 500 }
     );
   }
 }

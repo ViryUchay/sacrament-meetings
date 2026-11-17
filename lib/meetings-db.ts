@@ -1,309 +1,140 @@
-
+import { neon } from '@neondatabase/serverless';
 import type { SacramentMeeting } from './types';
-import fs from 'node:fs';
-import path from 'node:path';
 
-const initialMeetings: SacramentMeeting[] = [
-  {
-    id: 1,
-    date: '2026-11-08',
-    meetingType: 'testimony',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother Samuel',
-    announcements: [
-      'Ward choir practice will hold on Wednesday.',
-      'Youth activity is scheduled for Saturday.',
-    ],
-    openingHymn: {
-      number: 2,
-      title: 'The Spirit of God',
-    },
-    openingPrayer: 'Sister Grace',
-    wardBusiness: [
-      { description: 'Sustain newly called ward officers.' },
-      { description: 'Announce the upcoming ward activity.' },
-    ],
-    stakeBusiness: false,
-    sacramentHymn: {
-      number: 169,
-      title: 'As Now We Take the Sacrament',
-    },
-    speakers: [
-      {
-        name: 'Brother Michael',
-        topic: 'Gratitude and Faith',
-        type: 'speaker',
-      },
-      {
-        name: 'Sister Ruth',
-        topic: 'Personal Testimony',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 30,
-      title: 'Come, Come, Ye Saints',
-    },
-    closingPrayer: 'Brother Peter',
-  },
-  {
-    id: 2,
-    date: '2026-11-01',
-    meetingType: 'regular',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother Samuel',
-    announcements: ['Family history activity next Sunday.'],
-    openingHymn: {
-      number: 19,
-      title: 'We Thank Thee, O God, for a Prophet',
-    },
-    openingPrayer: 'Brother James',
-    wardBusiness: [
-      { description: 'Ward council updates.' },
-    ],
-    stakeBusiness: false,
-    sacramentHymn: {
-      number: 185,
-      title: 'Reverently and Meekly Now',
-    },
-    speakers: [
-      {
-        name: 'Sister Mary',
-        topic: 'The Importance of Prayer',
-        type: 'speaker',
-      },
-      {
-        name: 'Ward Choir',
-        topic: 'Musical Selection',
-        type: 'musical-number',
-      },
-      {
-        name: 'Brother John',
-        topic: 'Following Jesus Christ',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 134,
-      title: 'I Believe in Christ',
-    },
-    closingPrayer: 'Sister Esther',
-  },
-  {
-    id: 3,
-    date: '2026-10-25',
-    meetingType: 'regular',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother David',
-    announcements: ['Youth conference registration is open.'],
-    openingHymn: {
-      number: 3,
-      title: 'Now Let Us Rejoice',
-    },
-    openingPrayer: 'Sister Anna',
-    wardBusiness: [
-      { description: 'Announcements from the Relief Society.' },
-    ],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 188,
-      title: 'Thy Will, O Lord, Be Done',
-    },
-    speakers: [
-      {
-        name: 'Brother Paul',
-        topic: 'Service and Discipleship',
-        type: 'speaker',
-      },
-      {
-        name: 'Sister Elizabeth',
-        topic: 'Building Strong Families',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 152,
-      title: 'God Be with You Till We Meet Again',
-    },
-    closingPrayer: 'Brother Joseph',
-  },
-  {
-    id: 4,
-    date: '2026-10-18',
-    meetingType: 'stake',
-    presiding: 'Stake President Johnson',
-    conducting: 'Brother David',
-    announcements: ['Stake leadership training will follow.'],
-    openingHymn: {
-      number: 27,
-      title: 'Praise to the Man',
-    },
-    openingPrayer: 'Brother Andrew',
-    wardBusiness: [],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 190,
-      title: 'In Memory of the Crucified',
-    },
-    speakers: [
-      {
-        name: 'President Johnson',
-        topic: 'Strengthening Stake Unity',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 98,
-      title: 'I Need Thee Every Hour',
-    },
-    closingPrayer: 'Sister Helen',
-  },
-  {
-    id: 5,
-    date: '2026-10-11',
-    meetingType: 'general',
-    presiding: 'Elder Williams',
-    conducting: 'Brother David',
-    announcements: ['Regional conference information.'],
-    openingHymn: {
-      number: 87,
-      title: 'With Songs of Praise',
-    },
-    openingPrayer: 'Sister Ruth',
-    wardBusiness: [],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 188,
-      title: 'Thy Will, O Lord, Be Done',
-    },
-    speakers: [
-      {
-        name: 'Elder Williams',
-        topic: 'Faith in Jesus Christ',
-        type: 'speaker',
-      },
-      {
-        name: 'Choir',
-        topic: 'Musical Number',
-        type: 'musical-number',
-      },
-    ],
-    closingHymn: {
-      number: 85,
-      title: 'How Firm a Foundation',
-    },
-    closingPrayer: 'Brother Mark',
-  },
-];
+function getSql() {
+  const connectionString = process.env.DATABASE_URL;
 
-// Local JSON storage
-const dataDirectory = path.join(process.cwd(), 'data');
-const dataFile = path.join(dataDirectory, 'meetings.json');
-
-// Read meetings from the JSON file.
-// Create the file with sample data if it does not exist.
-function readMeetings(): SacramentMeeting[] {
-  if (!fs.existsSync(dataFile)) {
-    fs.mkdirSync(dataDirectory, { recursive: true });
-    fs.writeFileSync(
-      dataFile,
-      JSON.stringify(initialMeetings, null, 2),
-      'utf8'
-    );
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not configured.');
   }
 
-  const fileContent = fs.readFileSync(dataFile, 'utf8');
-
-  return JSON.parse(fileContent) as SacramentMeeting[];
+  return neon(connectionString);
 }
 
-// Save meetings to the JSON file.
-function saveMeetings(data: SacramentMeeting[]): void {
-  fs.mkdirSync(dataDirectory, { recursive: true });
+async function prepareDatabase() {
+  const sql = getSql();
 
-  fs.writeFileSync(
-    dataFile,
-    JSON.stringify(data, null, 2),
-    'utf8'
-  );
+  await sql`
+    CREATE TABLE IF NOT EXISTS meetings (
+      id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+      meeting_date DATE NOT NULL,
+      meeting_data JSONB NOT NULL
+    )
+  `;
+
+  return sql;
 }
 
 // Get all meetings, optionally filtered by date.
-export function getMeetings(date?: string): SacramentMeeting[] {
-  const allMeetings = readMeetings();
+export async function getMeetings(
+  date?: string
+): Promise<SacramentMeeting[]> {
+  const sql = await prepareDatabase();
 
-  if (date) {
-    return allMeetings.filter((meeting) => meeting.date === date);
-  }
+  const rows = date
+    ? await sql`
+        SELECT meeting_data
+        FROM meetings
+        WHERE meeting_date = ${date}::date
+        ORDER BY meeting_date DESC, id DESC
+      `
+    : await sql`
+        SELECT meeting_data
+        FROM meetings
+        ORDER BY meeting_date DESC, id DESC
+      `;
 
-  return [...allMeetings].sort((a, b) =>
-    b.date.localeCompare(a.date)
+  return rows.map(
+    (row) => row.meeting_data as SacramentMeeting
   );
 }
 
 // Get one meeting by its ID.
-export function getMeetingById(
+export async function getMeetingById(
   id: number
-): SacramentMeeting | undefined {
-  return readMeetings().find((meeting) => meeting.id === id);
+): Promise<SacramentMeeting | undefined> {
+  const sql = await prepareDatabase();
+
+  const rows = await sql`
+    SELECT meeting_data
+    FROM meetings
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+
+  return rows.length
+    ? (rows[0].meeting_data as SacramentMeeting)
+    : undefined;
 }
 
 // Create a new meeting.
-export function createMeeting(
+export async function createMeeting(
   meetingData: Omit<SacramentMeeting, 'id'>
-): SacramentMeeting {
-  const allMeetings = readMeetings();
+): Promise<SacramentMeeting> {
+  const sql = await prepareDatabase();
+
+  const idRows = await sql`
+    SELECT nextval(
+      pg_get_serial_sequence('meetings', 'id')
+    ) AS id
+  `;
+
+  const id = Number(idRows[0].id);
 
   const newMeeting: SacramentMeeting = {
     ...meetingData,
-    id: allMeetings.length
-      ? Math.max(...allMeetings.map((meeting) => meeting.id)) + 1
-      : 1,
+    id,
   };
 
-  saveMeetings([...allMeetings, newMeeting]);
+  await sql`
+    INSERT INTO meetings (id, meeting_date, meeting_data)
+    VALUES (
+      ${id},
+      ${newMeeting.date}::date,
+      ${JSON.stringify(newMeeting)}::jsonb
+    )
+  `;
 
   return newMeeting;
 }
 
 // Update an existing meeting.
-export function updateMeeting(
+export async function updateMeeting(
   id: number,
   meetingData: SacramentMeeting
-): SacramentMeeting | undefined {
-  const allMeetings = readMeetings();
+): Promise<SacramentMeeting | undefined> {
+  const sql = await prepareDatabase();
 
-  const index = allMeetings.findIndex(
-    (meeting) => meeting.id === id
-  );
-
-  if (index === -1) {
-    return undefined;
-  }
-
-  allMeetings[index] = {
+  const updatedMeeting: SacramentMeeting = {
     ...meetingData,
     id,
   };
 
-  saveMeetings(allMeetings);
+  const rows = await sql`
+    UPDATE meetings
+    SET
+      meeting_date = ${updatedMeeting.date}::date,
+      meeting_data = ${JSON.stringify(updatedMeeting)}::jsonb
+    WHERE id = ${id}
+    RETURNING meeting_data
+  `;
 
-  return allMeetings[index];
+  return rows.length
+    ? (rows[0].meeting_data as SacramentMeeting)
+    : undefined;
 }
 
 // Delete a meeting.
-export function deleteMeeting(id: number): boolean {
-  const allMeetings = readMeetings();
+export async function deleteMeeting(
+  id: number
+): Promise<boolean> {
+  const sql = await prepareDatabase();
 
-  const updatedMeetings = allMeetings.filter(
-    (meeting) => meeting.id !== id
-  );
+  const rows = await sql`
+    DELETE FROM meetings
+    WHERE id = ${id}
+    RETURNING id
+  `;
 
-  if (updatedMeetings.length === allMeetings.length) {
-    return false;
-  }
-
-  saveMeetings(updatedMeetings);
-
-  return true;
+  return rows.length > 0;
 }

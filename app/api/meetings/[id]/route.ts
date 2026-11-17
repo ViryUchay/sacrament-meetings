@@ -1,5 +1,4 @@
-
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import type { SacramentMeeting } from '@/lib/types';
 import {
   getMeetingById,
@@ -8,9 +7,7 @@ import {
 } from '@/lib/meetings-db';
 
 interface RouteContext {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(
@@ -27,7 +24,7 @@ export async function GET(
     );
   }
 
-  const meeting = getMeetingById(meetingId);
+  const meeting = await getMeetingById(meetingId);
 
   if (!meeting) {
     return NextResponse.json(
@@ -76,7 +73,7 @@ export async function PUT(
       );
     }
 
-    const meeting = updateMeeting(meetingId, data);
+    const meeting = await updateMeeting(meetingId, data);
 
     if (!meeting) {
       return NextResponse.json(
@@ -89,10 +86,12 @@ export async function PUT(
       message: 'Meeting updated successfully.',
       meeting,
     });
-  } catch {
+  } catch (error) {
+    console.error('Update meeting error:', error);
+
     return NextResponse.json(
-      { message: 'Invalid meeting data.' },
-      { status: 400 }
+      { message: 'Unable to update meeting.' },
+      { status: 500 }
     );
   }
 }
@@ -111,16 +110,25 @@ export async function DELETE(
     );
   }
 
-  const deleted = deleteMeeting(meetingId);
+  try {
+    const deleted = await deleteMeeting(meetingId);
 
-  if (!deleted) {
+    if (!deleted) {
+      return NextResponse.json(
+        { message: 'Meeting not found.' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'Meeting deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Delete meeting error:', error);
+
     return NextResponse.json(
-      { message: 'Meeting not found.' },
-      { status: 404 }
+      { message: 'Unable to delete meeting.' },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json({
-    message: 'Meeting deleted successfully.',
-  });
 }

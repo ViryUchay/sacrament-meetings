@@ -1,21 +1,17 @@
-
-import { Suspense } from 'react';
-import Link from 'next/link';
+﻿import { connection } from 'next/server';
 import { notFound } from 'next/navigation';
-import MeetingForm from '@/components/MeetingForm';
 import { getMeetingById } from '@/lib/meetings-db';
+import MeetingForm from '@/components/MeetingForm';
 
 interface EditMeetingPageProps {
   params: Promise<{ id: string }>;
 }
 
-function EditMeetingLoading() {
-  return <p className="p-6 text-slate-600">Loading meeting editor...</p>;
-}
-
-async function EditMeetingContent({
+export default async function EditMeetingPage({
   params,
 }: EditMeetingPageProps) {
+  await connection();
+
   const { id } = await params;
   const meetingId = Number(id);
 
@@ -23,7 +19,7 @@ async function EditMeetingContent({
     notFound();
   }
 
-  const meeting = getMeetingById(meetingId);
+  const meeting = await getMeetingById(meetingId);
 
   if (!meeting) {
     notFound();
@@ -31,28 +27,10 @@ async function EditMeetingContent({
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/meetings/${meeting.id}`}
-        className="font-semibold text-amber-800"
-      >
-        ← Back to Meeting
-      </Link>
-
       <h1 className="text-3xl font-bold text-slate-900">
         Edit Meeting Program
       </h1>
-
       <MeetingForm meeting={meeting} />
     </div>
-  );
-}
-
-export default function EditMeetingPage({
-  params,
-}: EditMeetingPageProps) {
-  return (
-    <Suspense fallback={<EditMeetingLoading />}>
-      <EditMeetingContent params={params} />
-    </Suspense>
   );
 }

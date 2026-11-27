@@ -27,7 +27,7 @@ export async function GET(
     );
   }
 
-  const meeting = getMeetingById(meetingId);
+  const meeting = await getMeetingById(meetingId);
 
   if (!meeting) {
     return NextResponse.json(
@@ -59,7 +59,7 @@ export async function PUT(
     if (
       !data.date ||
       !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
-      !['testimony', 'regular', 'stake', 'general'].includes(data.meetingType) ||
+      !['testimony', 'regular', 'stake', 'general', 'special'].includes(data.meetingType) ||
       !data.presiding?.trim() ||
       !data.conducting?.trim() ||
       !data.openingHymn?.title?.trim() ||
@@ -76,7 +76,7 @@ export async function PUT(
       );
     }
 
-    const meeting = updateMeeting(meetingId, data);
+    const meeting = await updateMeeting(meetingId, data);
 
     if (!meeting) {
       return NextResponse.json(
@@ -111,7 +111,7 @@ export async function DELETE(
     );
   }
 
-  const deleted = deleteMeeting(meetingId);
+  const deleted = await deleteMeeting(meetingId);
 
   if (!deleted) {
     return NextResponse.json(

@@ -1,309 +1,351 @@
 
-import type { SacramentMeeting } from './types';
-import fs from 'node:fs';
-import path from 'node:path';
+import { neon } from '@neondatabase/serverless';
+import type { SacramentMeeting, MeetingType, Hymn, SpeakerItem, WardBusinessItem } from './types';
 
-const initialMeetings: SacramentMeeting[] = [
-  {
-    id: 1,
-    date: '2026-11-08',
-    meetingType: 'testimony',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother Samuel',
-    announcements: [
-      'Ward choir practice will hold on Wednesday.',
-      'Youth activity is scheduled for Saturday.',
-    ],
-    openingHymn: {
-      number: 2,
-      title: 'The Spirit of God',
-    },
-    openingPrayer: 'Sister Grace',
-    wardBusiness: [
-      { description: 'Sustain newly called ward officers.' },
-      { description: 'Announce the upcoming ward activity.' },
-    ],
-    stakeBusiness: false,
-    sacramentHymn: {
-      number: 169,
-      title: 'As Now We Take the Sacrament',
-    },
-    speakers: [
-      {
-        name: 'Brother Michael',
-        topic: 'Gratitude and Faith',
-        type: 'speaker',
-      },
-      {
-        name: 'Sister Ruth',
-        topic: 'Personal Testimony',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 30,
-      title: 'Come, Come, Ye Saints',
-    },
-    closingPrayer: 'Brother Peter',
-  },
-  {
-    id: 2,
-    date: '2026-11-01',
-    meetingType: 'regular',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother Samuel',
-    announcements: ['Family history activity next Sunday.'],
-    openingHymn: {
-      number: 19,
-      title: 'We Thank Thee, O God, for a Prophet',
-    },
-    openingPrayer: 'Brother James',
-    wardBusiness: [
-      { description: 'Ward council updates.' },
-    ],
-    stakeBusiness: false,
-    sacramentHymn: {
-      number: 185,
-      title: 'Reverently and Meekly Now',
-    },
-    speakers: [
-      {
-        name: 'Sister Mary',
-        topic: 'The Importance of Prayer',
-        type: 'speaker',
-      },
-      {
-        name: 'Ward Choir',
-        topic: 'Musical Selection',
-        type: 'musical-number',
-      },
-      {
-        name: 'Brother John',
-        topic: 'Following Jesus Christ',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 134,
-      title: 'I Believe in Christ',
-    },
-    closingPrayer: 'Sister Esther',
-  },
-  {
-    id: 3,
-    date: '2026-10-25',
-    meetingType: 'regular',
-    presiding: 'Bishop Daniel',
-    conducting: 'Brother David',
-    announcements: ['Youth conference registration is open.'],
-    openingHymn: {
-      number: 3,
-      title: 'Now Let Us Rejoice',
-    },
-    openingPrayer: 'Sister Anna',
-    wardBusiness: [
-      { description: 'Announcements from the Relief Society.' },
-    ],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 188,
-      title: 'Thy Will, O Lord, Be Done',
-    },
-    speakers: [
-      {
-        name: 'Brother Paul',
-        topic: 'Service and Discipleship',
-        type: 'speaker',
-      },
-      {
-        name: 'Sister Elizabeth',
-        topic: 'Building Strong Families',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 152,
-      title: 'God Be with You Till We Meet Again',
-    },
-    closingPrayer: 'Brother Joseph',
-  },
-  {
-    id: 4,
-    date: '2026-10-18',
-    meetingType: 'stake',
-    presiding: 'Stake President Johnson',
-    conducting: 'Brother David',
-    announcements: ['Stake leadership training will follow.'],
-    openingHymn: {
-      number: 27,
-      title: 'Praise to the Man',
-    },
-    openingPrayer: 'Brother Andrew',
-    wardBusiness: [],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 190,
-      title: 'In Memory of the Crucified',
-    },
-    speakers: [
-      {
-        name: 'President Johnson',
-        topic: 'Strengthening Stake Unity',
-        type: 'speaker',
-      },
-    ],
-    closingHymn: {
-      number: 98,
-      title: 'I Need Thee Every Hour',
-    },
-    closingPrayer: 'Sister Helen',
-  },
-  {
-    id: 5,
-    date: '2026-10-11',
-    meetingType: 'general',
-    presiding: 'Elder Williams',
-    conducting: 'Brother David',
-    announcements: ['Regional conference information.'],
-    openingHymn: {
-      number: 87,
-      title: 'With Songs of Praise',
-    },
-    openingPrayer: 'Sister Ruth',
-    wardBusiness: [],
-    stakeBusiness: true,
-    sacramentHymn: {
-      number: 188,
-      title: 'Thy Will, O Lord, Be Done',
-    },
-    speakers: [
-      {
-        name: 'Elder Williams',
-        topic: 'Faith in Jesus Christ',
-        type: 'speaker',
-      },
-      {
-        name: 'Choir',
-        topic: 'Musical Number',
-        type: 'musical-number',
-      },
-    ],
-    closingHymn: {
-      number: 85,
-      title: 'How Firm a Foundation',
-    },
-    closingPrayer: 'Brother Mark',
-  },
-];
+// Create a Neon connection when a database operation is requested.
+function getSql() {
+  const databaseUrl = process.env.DATABASE_URL;
 
-// Local JSON storage
-const dataDirectory = path.join(process.cwd(), 'data');
-const dataFile = path.join(dataDirectory, 'meetings.json');
-
-// Read meetings from the JSON file.
-// Create the file with sample data if it does not exist.
-function readMeetings(): SacramentMeeting[] {
-  if (!fs.existsSync(dataFile)) {
-    fs.mkdirSync(dataDirectory, { recursive: true });
-    fs.writeFileSync(
-      dataFile,
-      JSON.stringify(initialMeetings, null, 2),
-      'utf8'
-    );
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is not configured.');
   }
 
-  const fileContent = fs.readFileSync(dataFile, 'utf8');
-
-  return JSON.parse(fileContent) as SacramentMeeting[];
+  return neon(databaseUrl);
 }
 
-// Save meetings to the JSON file.
-function saveMeetings(data: SacramentMeeting[]): void {
-  fs.mkdirSync(dataDirectory, { recursive: true });
+// Database record structure.
+interface MeetingRow {
+  id: number;
+  date: string;
+  meeting_type: MeetingType;
+  presiding: string;
+  conducting: string;
+  announcements: string[] | null;
+  opening_hymn: Hymn;
+  opening_prayer: string;
+  ward_business: WardBusinessItem[];
+  stake_business: boolean;
+  sacrament_hymn: Hymn;
+  speakers: SpeakerItem[];
+  closing_hymn: Hymn;
+  closing_prayer: string;
+}
 
-  fs.writeFileSync(
-    dataFile,
-    JSON.stringify(data, null, 2),
-    'utf8'
-  );
+// Convert a PostgreSQL record into the application TypeScript structure.
+function mapMeeting(row: MeetingRow): SacramentMeeting {
+  return {
+    id: row.id,
+    date: row.date,
+    meetingType: row.meeting_type,
+    presiding: row.presiding,
+    conducting: row.conducting,
+    announcements: row.announcements ?? [],
+    openingHymn: row.opening_hymn,
+    openingPrayer: row.opening_prayer,
+    wardBusiness: row.ward_business ?? [],
+    stakeBusiness: row.stake_business,
+    sacramentHymn: row.sacrament_hymn,
+    speakers: row.speakers ?? [],
+    closingHymn: row.closing_hymn,
+    closingPrayer: row.closing_prayer,
+  };
 }
 
 // Get all meetings, optionally filtered by date.
-export function getMeetings(date?: string): SacramentMeeting[] {
-  const allMeetings = readMeetings();
+export async function getMeetings(
+  date?: string
+): Promise<SacramentMeeting[]> {
+  const sql = getSql();
 
-  if (date) {
-    return allMeetings.filter((meeting) => meeting.date === date);
-  }
+  const rows = date
+    ? await sql`
+        SELECT
+          id,
+          date::text AS date,
+          meeting_type,
+          presiding,
+          conducting,
+          announcements,
+          opening_hymn,
+          opening_prayer,
+          ward_business,
+          stake_business,
+          sacrament_hymn,
+          speakers,
+          closing_hymn,
+          closing_prayer
+        FROM meetings
+        WHERE date = ${date}::date
+        ORDER BY date DESC
+      `
+    : await sql`
+        SELECT
+          id,
+          date::text AS date,
+          meeting_type,
+          presiding,
+          conducting,
+          announcements,
+          opening_hymn,
+          opening_prayer,
+          ward_business,
+          stake_business,
+          sacrament_hymn,
+          speakers,
+          closing_hymn,
+          closing_prayer
+        FROM meetings
+        ORDER BY date DESC
+      `;
 
-  return [...allMeetings].sort((a, b) =>
-    b.date.localeCompare(a.date)
-  );
+  return (rows as unknown as MeetingRow[]).map(mapMeeting);
 }
 
 // Get one meeting by its ID.
-export function getMeetingById(
+export async function getMeetingById(
   id: number
-): SacramentMeeting | undefined {
-  return readMeetings().find((meeting) => meeting.id === id);
+): Promise<SacramentMeeting | undefined> {
+  const sql = getSql();
+
+  const rows = await sql`
+    SELECT
+      id,
+      date::text AS date,
+      meeting_type,
+      presiding,
+      conducting,
+      announcements,
+      opening_hymn,
+      opening_prayer,
+      ward_business,
+      stake_business,
+      sacrament_hymn,
+      speakers,
+      closing_hymn,
+      closing_prayer
+    FROM meetings
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+
+  const meetings = rows as unknown as MeetingRow[];
+
+  return meetings.length ? mapMeeting(meetings[0]) : undefined;
 }
 
 // Create a new meeting.
-export function createMeeting(
+export async function createMeeting(
   meetingData: Omit<SacramentMeeting, 'id'>
-): SacramentMeeting {
-  const allMeetings = readMeetings();
+): Promise<SacramentMeeting> {
+  const sql = getSql();
 
-  const newMeeting: SacramentMeeting = {
-    ...meetingData,
-    id: allMeetings.length
-      ? Math.max(...allMeetings.map((meeting) => meeting.id)) + 1
-      : 1,
-  };
+  const rows = await sql`
+    INSERT INTO meetings (
+      date,
+      meeting_type,
+      presiding,
+      conducting,
+      announcements,
+      opening_hymn,
+      opening_prayer,
+      ward_business,
+      stake_business,
+      sacrament_hymn,
+      speakers,
+      closing_hymn,
+      closing_prayer
+    )
+    VALUES (
+      ${meetingData.date}::date,
+      ${meetingData.meetingType},
+      ${meetingData.presiding},
+      ${meetingData.conducting},
+      ${meetingData.announcements ?? []},
+      ${JSON.stringify(meetingData.openingHymn)}::jsonb,
+      ${meetingData.openingPrayer},
+      ${JSON.stringify(meetingData.wardBusiness)}::jsonb,
+      ${meetingData.stakeBusiness},
+      ${JSON.stringify(meetingData.sacramentHymn)}::jsonb,
+      ${JSON.stringify(meetingData.speakers)}::jsonb,
+      ${JSON.stringify(meetingData.closingHymn)}::jsonb,
+      ${meetingData.closingPrayer}
+    )
+    RETURNING
+      id,
+      date::text AS date,
+      meeting_type,
+      presiding,
+      conducting,
+      announcements,
+      opening_hymn,
+      opening_prayer,
+      ward_business,
+      stake_business,
+      sacrament_hymn,
+      speakers,
+      closing_hymn,
+      closing_prayer
+  `;
 
-  saveMeetings([...allMeetings, newMeeting]);
-
-  return newMeeting;
+  return mapMeeting((rows as unknown as MeetingRow[])[0]);
 }
 
 // Update an existing meeting.
-export function updateMeeting(
+export async function updateMeeting(
   id: number,
   meetingData: SacramentMeeting
-): SacramentMeeting | undefined {
-  const allMeetings = readMeetings();
+): Promise<SacramentMeeting | undefined> {
+  const sql = getSql();
 
-  const index = allMeetings.findIndex(
-    (meeting) => meeting.id === id
-  );
+  const rows = await sql`
+    UPDATE meetings
+    SET
+      date = ${meetingData.date}::date,
+      meeting_type = ${meetingData.meetingType},
+      presiding = ${meetingData.presiding},
+      conducting = ${meetingData.conducting},
+      announcements = ${meetingData.announcements ?? []},
+      opening_hymn = ${JSON.stringify(meetingData.openingHymn)}::jsonb,
+      opening_prayer = ${meetingData.openingPrayer},
+      ward_business = ${JSON.stringify(meetingData.wardBusiness)}::jsonb,
+      stake_business = ${meetingData.stakeBusiness},
+      sacrament_hymn = ${JSON.stringify(meetingData.sacramentHymn)}::jsonb,
+      speakers = ${JSON.stringify(meetingData.speakers)}::jsonb,
+      closing_hymn = ${JSON.stringify(meetingData.closingHymn)}::jsonb,
+      closing_prayer = ${meetingData.closingPrayer}
+    WHERE id = ${id}
+    RETURNING
+      id,
+      date::text AS date,
+      meeting_type,
+      presiding,
+      conducting,
+      announcements,
+      opening_hymn,
+      opening_prayer,
+      ward_business,
+      stake_business,
+      sacrament_hymn,
+      speakers,
+      closing_hymn,
+      closing_prayer
+  `;
 
-  if (index === -1) {
-    return undefined;
-  }
+  const meetings = rows as unknown as MeetingRow[];
 
-  allMeetings[index] = {
-    ...meetingData,
-    id,
-  };
-
-  saveMeetings(allMeetings);
-
-  return allMeetings[index];
+  return meetings.length ? mapMeeting(meetings[0]) : undefined;
 }
 
 // Delete a meeting.
-export function deleteMeeting(id: number): boolean {
-  const allMeetings = readMeetings();
+export async function deleteMeeting(id: number): Promise<boolean> {
+  const sql = getSql();
 
-  const updatedMeetings = allMeetings.filter(
-    (meeting) => meeting.id !== id
+  const rows = await sql`
+    DELETE FROM meetings
+    WHERE id = ${id}
+    RETURNING id
+  `;
+
+  return rows.length > 0;
+}
+
+// Search meetings and return one page of results.
+export async function getMeetingsPage(
+  search: string,
+  page: number,
+  pageSize: number = 5
+): Promise<{
+  meetings: SacramentMeeting[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+}> {
+  const sql = getSql();
+
+  const searchTerm = search.trim();
+  const searchPattern = `%${searchTerm}%`;
+
+  // Count all meetings matching the search.
+  const countRows = await sql`
+    SELECT COUNT(*) AS total
+    FROM meetings
+    WHERE (
+      ${searchTerm} = ''
+      OR TO_CHAR(date, 'Month') ILIKE ${searchPattern}
+      OR TO_CHAR(date, 'Mon') ILIKE ${searchPattern}
+      OR date::text ILIKE ${searchPattern}
+      OR meeting_type ILIKE ${searchPattern}
+      OR presiding ILIKE ${searchPattern}
+      OR conducting ILIKE ${searchPattern}
+      OR announcements::text ILIKE ${searchPattern}
+      OR opening_hymn::text ILIKE ${searchPattern}
+      OR opening_prayer ILIKE ${searchPattern}
+      OR ward_business::text ILIKE ${searchPattern}
+      OR sacrament_hymn::text ILIKE ${searchPattern}
+      OR speakers::text ILIKE ${searchPattern}
+      OR closing_hymn::text ILIKE ${searchPattern}
+      OR closing_prayer ILIKE ${searchPattern}
+    )
+  `;
+
+  const totalCount = Number(
+    (countRows[0] as { total: string | number }).total
   );
 
-  if (updatedMeetings.length === allMeetings.length) {
-    return false;
-  }
+  const totalPages = Math.ceil(totalCount / pageSize);
 
-  saveMeetings(updatedMeetings);
+  // Keep the requested page within the available range.
+  const currentPage =
+    totalPages === 0
+      ? 1
+      : Math.min(Math.max(1, Math.floor(page)), totalPages);
 
-  return true;
+  const offset = (currentPage - 1) * pageSize;
+
+  // Retrieve only the meetings for the selected page.
+  const rows = await sql`
+    SELECT
+      id,
+      date::text AS date,
+      meeting_type,
+      presiding,
+      conducting,
+      announcements,
+      opening_hymn,
+      opening_prayer,
+      ward_business,
+      stake_business,
+      sacrament_hymn,
+      speakers,
+      closing_hymn,
+      closing_prayer
+    FROM meetings
+    WHERE (
+      ${searchTerm} = ''
+      OR TO_CHAR(date, 'Month') ILIKE ${searchPattern}
+      OR TO_CHAR(date, 'Mon') ILIKE ${searchPattern}
+      OR date::text ILIKE ${searchPattern}
+      OR meeting_type ILIKE ${searchPattern}
+      OR presiding ILIKE ${searchPattern}
+      OR conducting ILIKE ${searchPattern}
+      OR announcements::text ILIKE ${searchPattern}
+      OR opening_hymn::text ILIKE ${searchPattern}
+      OR opening_prayer ILIKE ${searchPattern}
+      OR ward_business::text ILIKE ${searchPattern}
+      OR sacrament_hymn::text ILIKE ${searchPattern}
+      OR speakers::text ILIKE ${searchPattern}
+      OR closing_hymn::text ILIKE ${searchPattern}
+      OR closing_prayer ILIKE ${searchPattern}
+    )
+    ORDER BY date DESC
+    LIMIT ${pageSize}
+    OFFSET ${offset}
+  `;
+
+  return {
+    meetings: (rows as unknown as MeetingRow[]).map(mapMeeting),
+    totalCount,
+    totalPages,
+    currentPage,
+  };
 }

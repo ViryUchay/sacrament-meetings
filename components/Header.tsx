@@ -1,21 +1,31 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+function subscribe() {
+  return () => {};
+}
+
+function getCurrentDate() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function getServerDate() {
+  return '';
+}
 
 export default function Header() {
-  const [currentDate, setCurrentDate] = useState('');
-
-  useEffect(() => {
-    setCurrentDate(
-      new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    );
-  }, []);
+  const currentDate = useSyncExternalStore(
+    subscribe,
+    getCurrentDate,
+    getServerDate
+  );
 
   return (
     <header className="border-b border-amber-200 bg-white">

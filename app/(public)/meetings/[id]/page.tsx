@@ -23,7 +23,7 @@ async function MeetingContent({ params }: MeetingPageProps) {
     notFound();
   }
 
-  const meeting = getMeetingById(meetingId);
+  const meeting = await getMeetingById(meetingId);
 
   if (!meeting) {
     notFound();

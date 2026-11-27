@@ -1,14 +1,14 @@
-import { connection } from "next/server";
+
+import { connection } from 'next/server';
 import { redirect } from 'next/navigation';
 import { getMeetings } from '@/lib/meetings-db';
 
 export default async function CurrentMeetingPage() {
- await connection();
+  await connection();
 
-  const meetings = getMeetings();
+  const meetings = await getMeetings();
 
   const today = new Date();
-  
   const currentSunday = new Date(today);
 
   currentSunday.setDate(

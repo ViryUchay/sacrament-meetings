@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const meetings = getMeetings(date ?? undefined);
+  const meetings = await getMeetings(date ?? undefined);
 
   return NextResponse.json({
     count: meetings.length,
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (
       !data.date ||
       !/^\d{4}-\d{2}-\d{2}$/.test(data.date) ||
-      !['testimony', 'regular', 'stake', 'general'].includes(data.meetingType) ||
+      !['testimony', 'regular', 'stake', 'general', 'special'].includes(data.meetingType) ||
       !data.presiding?.trim() ||
       !data.conducting?.trim() ||
       !data.openingHymn?.title?.trim() ||
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const meeting = createMeeting(data);
+    const meeting = await createMeeting(data);
 
     return NextResponse.json(
       {

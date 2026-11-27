@@ -36,18 +36,23 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-amber-50/30">
         <Header />
 
-        <Suspense
-          fallback={
-            <nav
-              aria-label="Main navigation"
-              className="border-b border-slate-200 bg-slate-50 px-6 py-3"
-            >
-              Loading navigation...
-            </nav>
-          }
-        >
-          <NavLinks />
-        </Suspense>
+        
+<Suspense
+  fallback={
+    <nav
+      aria-label="Main navigation"
+      className="border-b border-slate-200 bg-slate-50"
+    >
+      <div className="mx-auto flex max-w-6xl flex-wrap gap-2 px-6 py-3">
+        <span className="rounded-md px-4 py-2 text-sm font-medium text-slate-700">
+          Home
+        </span>
+      </div>
+    </nav>
+  }
+>
+  <NavLinks />
+</Suspense>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
           {children}
